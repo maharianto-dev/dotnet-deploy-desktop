@@ -4,10 +4,25 @@ import { invoke } from "@tauri-apps/api";
 import { ProjectModel } from "../models/ProjectModel";
 import { NoDataOrWithDataStructModel } from "../models/tauri/CommandResult";
 import GridOperator from "../containers/GridOperator";
+import { GridOperatorTypeEnum } from "../models/GridOperatorModel";
+import { filterArrayOfObjectByArrayOfObject } from "../helpers/ArrayHelper";
 
 const BuildPage = () => {
   const [slnPath, setSlnPath] = useState("");
   const [projectList, setProjectList] = useState([] as ProjectModel[]);
+  // initial / left grid
+  const [gridInitialLocalProjectList, setGridInitialLocalProjectList] =
+    useState([] as ProjectModel[]);
+  const [gridInitialSelectedProjectList, setGridInitialSelectedProjectList] =
+    useState([] as ProjectModel[]);
+
+  // selection / right grid
+  const [gridSelectionLocalProjectList, setGridSelectionLocalProjectList] =
+    useState([] as ProjectModel[]);
+  const [
+    gridSelectionSelectedProjectList,
+    setGridSelectionSelectedProjectList,
+  ] = useState([] as ProjectModel[]);
 
   const handleSubmitClick = async () => {
     let retval = (await invoke("get_projects", {
@@ -18,9 +33,76 @@ const BuildPage = () => {
     }
 
     if (retval.NoData != null) {
-      console.log(retval.NoData.command_message);
       setProjectList([]);
     }
+  };
+
+  const gridInitialLocalProjectListChange = (state: ProjectModel[]) => {
+    setGridInitialLocalProjectList(state);
+  };
+
+  const gridInitialSelectedProjectListChange = (state: ProjectModel[]) => {
+    setGridInitialSelectedProjectList(state);
+  };
+
+  const handleGridButtonEvent = (gridOperatorType: GridOperatorTypeEnum) => {
+    switch (gridOperatorType) {
+      case GridOperatorTypeEnum.MoveAllRight: {
+        const notInSelection = filterArrayOfObjectByArrayOfObject(
+          gridInitialLocalProjectList,
+          gridSelectionLocalProjectList
+        );
+        const selected = [...gridSelectionLocalProjectList, ...notInSelection];
+        selected.sort((row1, row2) => {
+          const row1Name = row1.project_name;
+          const row2Name = row2.project_name;
+          if (row1Name < row2Name) return -1;
+          if (row1Name > row2Name) return 1;
+          return 0;
+        });
+        setGridSelectionLocalProjectList([...selected]);
+        break;
+      }
+      case GridOperatorTypeEnum.MoveSelectedRight: {
+        const notInSelection = filterArrayOfObjectByArrayOfObject(
+          gridInitialSelectedProjectList,
+          gridSelectionLocalProjectList
+        );
+        const selected = [...gridSelectionLocalProjectList, ...notInSelection];
+        selected.sort((row1, row2) => {
+          const row1Name = row1.project_name;
+          const row2Name = row2.project_name;
+          if (row1Name < row2Name) return -1;
+          if (row1Name > row2Name) return 1;
+          return 0;
+        });
+        setGridSelectionLocalProjectList([...selected]);
+        break;
+      }
+      case GridOperatorTypeEnum.MoveSelectedLeft: {
+        const notInSelection = filterArrayOfObjectByArrayOfObject(
+          gridSelectionLocalProjectList,
+          gridSelectionSelectedProjectList
+        );
+        setGridSelectionLocalProjectList([...notInSelection]);
+        setGridSelectionSelectedProjectList([...[]]);
+        break;
+      }
+      case GridOperatorTypeEnum.MoveAllLeft:
+        setGridSelectionLocalProjectList([...[]]);
+        setGridSelectionSelectedProjectList([...[]]);
+        break;
+      default:
+        break;
+    }
+  };
+
+  const gridSelectionLocalProjectListChange = (state: ProjectModel[]) => {
+    setGridSelectionLocalProjectList(state);
+  };
+
+  const gridSelectionSelectedProjectListChange = (state: ProjectModel[]) => {
+    setGridSelectionSelectedProjectList(state);
   };
 
   return (
@@ -43,13 +125,37 @@ const BuildPage = () => {
         </div>
       </div>
       <div className="flex flex-row grow w-full max-h-full gap-2 overflow-y-auto">
-        <div className="w-5/12 overflow-y-auto">
-          <Grid projectList={projectList} showMultiSelect={true} />
+        <div className="flex flex-col w-5/12 min-h-full max-h-full overflow-y-auto">
+          <p className="text-lg">Project List</p>
+          <Grid
+            projectList={projectList}
+            showMultiSelect={true}
+            showFilter={true}
+            onGridLocalProjectListChange={gridInitialLocalProjectListChange}
+            onGridSelectedProjectListChange={
+              gridInitialSelectedProjectListChange
+            }
+            localProjectList={gridInitialLocalProjectList}
+            selectedGridItems={gridInitialSelectedProjectList}
+          />
         </div>
         <div className="w-2/12">
-          <GridOperator />
+          <GridOperator onHandleGridButtonEvent={handleGridButtonEvent} />
         </div>
-        <div className="w-5/12 bg-red-300"></div>
+        <div className="flex flex-col w-5/12 min-h-full max-h-full overflow-y-auto">
+          <p className="text-lg">Selected Project</p>
+          <Grid
+            projectList={null}
+            showMultiSelect={true}
+            showFilter={false}
+            onGridLocalProjectListChange={gridSelectionLocalProjectListChange}
+            onGridSelectedProjectListChange={
+              gridSelectionSelectedProjectListChange
+            }
+            localProjectList={gridSelectionLocalProjectList}
+            selectedGridItems={gridSelectionSelectedProjectList}
+          ></Grid>
+        </div>
       </div>
     </div>
   );
