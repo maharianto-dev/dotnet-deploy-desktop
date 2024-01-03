@@ -47,7 +47,7 @@ const Header = () => {
           }
           onClick={() => handleNavButton("build")}
         >
-          Build
+          Publish
         </a>
         <a
           className={

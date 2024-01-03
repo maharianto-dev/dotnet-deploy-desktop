@@ -3,4 +3,5 @@ export const enum GridOperatorTypeEnum {
   "MoveSelectedRight",
   "MoveSelectedLeft",
   "MoveAllLeft",
+  "BuildAndDeploy"
 }

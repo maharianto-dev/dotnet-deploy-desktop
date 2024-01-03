@@ -120,21 +120,21 @@ function Grid({
   return (
     <div className="overflow-x-auto overflow-y-auto">
       <table className="table table-pin-rows">
-        <thead>
-          <tr className="bg-indigo-600">
+        <thead className="font-normal">
+          <tr className="bg-indigo-600 h-6">
             {showMultiSelect && (
               <th className="w-0">
                 <div className="w-full">
                   <input
                     type="checkbox"
-                    className="checkbox checkbox-accent"
+                    className="checkbox checkbox-accent w-4 h-4 rounded"
                     checked={getIsCheckedAll()}
                     onChange={(e) => handleIsSelectedAllChange(e)}
                   />
                 </div>
               </th>
             )}
-            <th className="text-lg text-primary-content">
+            <td className="text-md text-primary-content">
               <div className="flex flex-col">
                 <div className="flex flex-row items-center">
                   <span className="mr-2">Project Name</span>{" "}
@@ -154,7 +154,7 @@ function Grid({
                   )}
                 </div>
                 {isShowingFilter === true && (
-                  <h1 className="flex-1">
+                  <div className="flex-1">
                     <div className="form-control w-full">
                       <label className="label">
                         <span className="label-text">Insert search filter</span>
@@ -162,15 +162,15 @@ function Grid({
                       <input
                         type="text"
                         placeholder="Search filter"
-                        className="input input-bordered w-full"
+                        className="input input-bordered input-sm w-full text-md"
                         value={searchFilter}
                         onChange={(e) => onSearchFilterKeyUp(e)}
                       />
                     </div>
-                  </h1>
+                  </div>
                 )}
               </div>
-            </th>
+            </td>
           </tr>
         </thead>
         <tbody>
@@ -182,7 +182,7 @@ function Grid({
                   <td className="object-center">
                     <input
                       type="checkbox"
-                      className="checkbox checkbox-accent"
+                      className="checkbox checkbox-accent w-4 h-4 rounded"
                       checked={isRowSelected}
                       onChange={(e) => {
                         handleIsSelectedChange(e, row);

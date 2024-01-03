@@ -1,3 +1,4 @@
+#[derive(Debug)]
 pub struct CheckPathStruct {
     pub is_valid: bool,
     pub result: String,
@@ -10,4 +11,10 @@ impl CheckPathStruct {
             result: _result,
         }
     }
+}
+
+#[derive(serde::Deserialize)]
+pub struct GetProjectCommandStruct<'a> {
+    pub path: &'a str,
+    pub deploy_path: &'a str,
 }
