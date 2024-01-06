@@ -48,7 +48,7 @@ pub fn check_deploy_path(path: &str) -> CheckPathStruct {
     }
 }
 
-fn clean_path(path: &str) -> String {
+pub fn clean_path(path: &str) -> String {
     let mut my_path = String::from(path);
     if my_path.starts_with("\"") {
         my_path = my_path.replacen("\"", "", 1);

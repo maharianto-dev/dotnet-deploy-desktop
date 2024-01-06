@@ -165,6 +165,10 @@ const BuildPage = () => {
     let retval = (await invoke("publish_and_deploy", {
       data: sendData,
     })) as NoDataOrWithDataStructModel<boolean>;
+    console.log(retval);
+    // const command = new Command("wt");
+    // const child = await command.spawn();
+    // await child.write('message');
   };
 
   const gridSelectionLocalProjectListChange = (state: ProjectModel[]) => {

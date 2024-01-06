@@ -3,9 +3,9 @@
 
 use enums::NoDataOrWithDataStruct;
 use helpers::check_path::check_deploy_path;
+use std::{error::Error, fs::read_to_string, path::Path};
 use structs::check_path_struct::GetProjectCommandStruct;
 use structs::publish_and_deploy_struct::PublishAndDeployStruct;
-use std::{error::Error, fs::read_to_string, path::Path};
 
 use structs::returns_struct::CommandResultStruct;
 
@@ -29,7 +29,9 @@ fn greet(name: &str) -> String {
 }
 
 #[tauri::command]
-fn get_projects(data: GetProjectCommandStruct) -> NoDataOrWithDataStruct<Vec<ParsedSolutionStruct>> {
+fn get_projects(
+    data: GetProjectCommandStruct,
+) -> NoDataOrWithDataStruct<Vec<ParsedSolutionStruct>> {
     let path_valid = check_solution_path(data.path);
     let deploy_path_valid = check_deploy_path(data.deploy_path);
     if path_valid.is_valid == false {
@@ -80,10 +82,22 @@ fn get_projects_in_solution(path: &str) -> Result<Vec<ParsedSolutionStruct>, Box
 }
 
 #[tauri::command]
-fn publish_and_deploy(data: PublishAndDeployStruct) -> NoDataOrWithDataStruct<bool> {
+async fn publish_and_deploy(data: PublishAndDeployStruct) -> NoDataOrWithDataStruct<bool> {
+    let clean_sln_path = helpers::check_path::clean_path(&data.sln_path);
     for datum in data.project_list {
-        datum.
+        match helpers::publish_and_deploy::publish(&clean_sln_path, &datum).await {
+            Ok(()) => {
+                continue;
+            }
+            Err(err) => {
+                println!("{}", err);
+                let retval = CommandResultStruct::new(false, "Error");
+                return NoDataOrWithDataStruct::NoData(retval);
+            }
+        }
     }
+    let retval = CommandResultStruct::new(false, "Testing");
+    return NoDataOrWithDataStruct::NoData(retval);
 }
 
 fn main() {
@@ -137,7 +151,11 @@ fn main() {
     info!("App Started!");
 
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![greet, get_projects])
+        .invoke_handler(tauri::generate_handler![
+            greet,
+            get_projects,
+            publish_and_deploy
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
