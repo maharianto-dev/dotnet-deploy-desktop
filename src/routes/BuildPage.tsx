@@ -165,7 +165,20 @@ const BuildPage = () => {
     let retval = (await invoke("publish_and_deploy", {
       data: sendData,
     })) as NoDataOrWithDataStructModel<boolean>;
-    console.log(retval);
+    if (retval != null) {
+      if (retval?.WithData?.command_result === true) {
+
+      } else {
+
+      }
+    } else {
+      setToastList((currVal) => [...currVal, {
+        id: Math.random() * ToastSeverityEnum.ERROR,
+        message: `Failed publishing and deploying project(s), please check the log at ${'"<home dir>/dotnet-desktop-deploy/log"'}`,
+        severity: ToastSeverityEnum.SUCCESS,
+      } as ToastListModel]);
+      // <p>{`Error building and deploying angular app(s). Please check your log at ${'"<home dir>/angular-deploy-gui/log"'}`}</p>
+    }
     // const command = new Command("wt");
     // const child = await command.spawn();
     // await child.write('message');

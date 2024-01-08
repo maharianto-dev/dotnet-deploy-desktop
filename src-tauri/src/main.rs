@@ -5,7 +5,7 @@ use enums::NoDataOrWithDataStruct;
 use helpers::check_path::check_deploy_path;
 use std::{error::Error, fs::read_to_string, path::Path};
 use structs::check_path_struct::GetProjectCommandStruct;
-use structs::publish_and_deploy_struct::PublishAndDeployStruct;
+use structs::publish_and_deploy_struct::{PublishAndDeployStruct, PublishAndDeployResultStruct};
 
 use structs::returns_struct::CommandResultStruct;
 
@@ -14,7 +14,7 @@ use chrono::Local;
 use crate::{
     helpers::check_path::check_solution_path, structs::parsed_solution_struct::ParsedSolutionStruct,
 };
-use log::{error, info, warn, LevelFilter};
+use log::{error, info, LevelFilter};
 use log4rs::append::file::FileAppender;
 use log4rs::config::{Appender, Config, Root};
 use log4rs::encode::pattern::PatternEncoder;
@@ -32,13 +32,16 @@ fn greet(name: &str) -> String {
 fn get_projects(
     data: GetProjectCommandStruct,
 ) -> NoDataOrWithDataStruct<Vec<ParsedSolutionStruct>> {
+    info!("Start getting projects list");
     let path_valid = check_solution_path(data.path);
     let deploy_path_valid = check_deploy_path(data.deploy_path);
     if path_valid.is_valid == false {
+        error!("Solution path is not valid");
         let retval = CommandResultStruct::new(false, &path_valid.result);
         return NoDataOrWithDataStruct::NoData(retval);
     }
     if deploy_path_valid.is_valid == false {
+        error!("Desployment path is not valid");
         let retval = CommandResultStruct::new(false, &deploy_path_valid.result);
         return NoDataOrWithDataStruct::NoData(retval);
     }
@@ -46,11 +49,12 @@ fn get_projects(
     let result_get_projects_in_solution = get_projects_in_solution(&new_path);
     match result_get_projects_in_solution {
         Ok(data) => {
+            info!("Done getting projects list");
             let retval = CommandResultStruct::new_with_generic(true, "solution parsed", data);
             return NoDataOrWithDataStruct::WithData(retval);
         }
         Err(err) => {
-            // error!("{:?}", err);
+            error!("{:?}", err);
             let retval = CommandResultStruct::new(false, "Error parsing solution");
             return NoDataOrWithDataStruct::NoData(retval);
         }
@@ -58,6 +62,7 @@ fn get_projects(
 }
 
 fn get_projects_in_solution(path: &str) -> Result<Vec<ParsedSolutionStruct>, Box<dyn Error>> {
+    info!("Start getting projects in provided solution");
     let mut project_list = Vec::new();
     let solution_content = read_to_string(path)?;
     let content_lines: Vec<_> = solution_content.lines().collect();
@@ -78,26 +83,32 @@ fn get_projects_in_solution(path: &str) -> Result<Vec<ParsedSolutionStruct>, Box
             }
         }
     }
+    info!("Done getting projects in provided solution");
     Ok(project_list)
 }
 
 #[tauri::command]
-async fn publish_and_deploy(data: PublishAndDeployStruct) -> NoDataOrWithDataStruct<bool> {
+async fn publish_and_deploy(data: PublishAndDeployStruct) -> NoDataOrWithDataStruct<PublishAndDeployResultStruct> {
+    info!("Start executing publish and deploy command asynchronously");
+    let mut success_vec:Vec<String> = Vec::<String>::new();
+    let mut failed_vec:Vec<String> = Vec::<String>::new();
     let clean_sln_path = helpers::check_path::clean_path(&data.sln_path);
     for datum in data.project_list {
         match helpers::publish_and_deploy::publish(&clean_sln_path, &datum).await {
             Ok(()) => {
-                continue;
+                success_vec.push(datum.project_name.to_owned());
+                info!("Successfully published {}", &datum.project_name);
             }
-            Err(err) => {
-                println!("{}", err);
-                let retval = CommandResultStruct::new(false, "Error");
-                return NoDataOrWithDataStruct::NoData(retval);
+            Err(_err) => {
+                failed_vec.push(datum.project_name.to_owned());
+                error!("Fail to publish {}", &datum.project_name);
             }
         }
     }
-    let retval = CommandResultStruct::new(false, "Testing");
-    return NoDataOrWithDataStruct::NoData(retval);
+    let result_vec = PublishAndDeployResultStruct::new(success_vec, failed_vec);
+    let retval = CommandResultStruct::new_with_generic(true, "Done executing publish and deploy command asynchronously", result_vec);
+    info!("Done executing publish and deploy command asynchronously");
+    return NoDataOrWithDataStruct::WithData(retval);
 }
 
 fn main() {
