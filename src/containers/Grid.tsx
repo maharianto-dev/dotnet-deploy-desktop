@@ -1,6 +1,8 @@
 import { BaseSyntheticEvent, useState, useEffect } from "react";
 import { ProjectModel } from "../models/ProjectModel";
 import { FaMagnifyingGlass, FaCircleXmark } from "react-icons/fa6";
+import { useSelector } from "react-redux";
+import { RootState } from "../redux/store";
 
 function Grid({
   projectList,
@@ -29,6 +31,8 @@ function Grid({
   const [isShowingFilter, setIsShowingFilter] = useState(false);
 
   const [searchFilter, setSearchFilter] = useState("");
+
+  const actionState = useSelector((state: RootState) => state.actionState.value);
 
   useEffect(() => {
     if (projectList) {
@@ -130,6 +134,7 @@ function Grid({
                     className="checkbox checkbox-accent w-4 h-4 rounded"
                     checked={getIsCheckedAll()}
                     onChange={(e) => handleIsSelectedAllChange(e)}
+                    disabled={!actionState}
                   />
                 </div>
               </th>
@@ -165,6 +170,7 @@ function Grid({
                         className="input input-bordered input-sm w-full text-md"
                         value={searchFilter}
                         onChange={(e) => onSearchFilterKeyUp(e)}
+                        disabled={!actionState}
                       />
                     </div>
                   </div>
@@ -187,6 +193,7 @@ function Grid({
                       onChange={(e) => {
                         handleIsSelectedChange(e, row);
                       }}
+                      disabled={!actionState}
                     />
                   </td>
                 )}
