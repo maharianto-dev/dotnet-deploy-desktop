@@ -8,7 +8,18 @@ import { GridOperatorTypeEnum } from "../models/GridOperatorModel";
 import { filterArrayOfObjectByArrayOfObject } from "../helpers/ArrayHelper";
 import { GetProjectCommandStruct } from "../models/tauri/CheckPathStruct";
 import Toast, { ToastListModel, ToastSeverityEnum } from "../containers/Toast";
-import { PublishAndDeployStruct } from "../models/tauri/PublishAndDeployStruct";
+import {
+  PublishAndDeployResultStruct,
+  PublishAndDeployStruct,
+} from "../models/tauri/PublishAndDeployStruct";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  PublishResultState,
+  ResultTypeEnum,
+  setResult,
+} from "../redux/resultSlice";
+import { setActionFalse, setActionTrue } from "../redux/actionStateSlice";
+import { RootState } from "../redux/store";
 
 const BuildPage = () => {
   const [slnPath, setSlnPath] = useState("");
@@ -31,10 +42,28 @@ const BuildPage = () => {
   const [enableBuildAndDeployButton, setEnableBuildAndDeployButton] =
     useState(false);
   const [buildAndDeployButtonText, setBuildAndDeployButtonText] =
-    useState("Build");
+    useState("Publish");
   const [toastList, setToastList] = useState([] as ToastListModel[]);
 
+  const dispatch = useDispatch();
+  const actionState = useSelector(
+    (state: RootState) => state.actionState.value
+  );
+
+  const resetResultBox = () => {
+    dispatch(
+      setResult({
+        type: ResultTypeEnum.EMPTY,
+        message: null,
+      })
+    );
+  };
+
   const handleSubmitClick = async () => {
+    resetResultBox();
+
+    dispatch(setActionFalse());
+
     let sendData = {
       path: slnPath,
       deploy_path: deploymentPath,
@@ -48,6 +77,8 @@ const BuildPage = () => {
     setGridSelectionLocalProjectList([...[]]);
     setGridSelectionSelectedProjectList([...[]]);
     setEnableBuildAndDeployButton(false);
+
+    dispatch(setActionTrue());
     if (retval.WithData != null) {
       if (retval.WithData.command_result === true) {
         setProjectList(retval.WithData.command_data);
@@ -148,6 +179,7 @@ const BuildPage = () => {
         setGridSelectionSelectedProjectList([...[]]);
         break;
       case GridOperatorTypeEnum.BuildAndDeploy:
+        resetResultBox();
         doBuildAndDeploy();
         break;
       default:
@@ -156,7 +188,7 @@ const BuildPage = () => {
   };
 
   const doBuildAndDeploy = async () => {
-    console.log(gridSelectionLocalProjectList);
+    dispatch(setActionFalse());
     let sendData = {
       sln_path: slnPath,
       deployment_path: deploymentPath,
@@ -164,24 +196,39 @@ const BuildPage = () => {
     } as PublishAndDeployStruct;
     let retval = (await invoke("publish_and_deploy", {
       data: sendData,
-    })) as NoDataOrWithDataStructModel<boolean>;
+    })) as NoDataOrWithDataStructModel<PublishAndDeployResultStruct>;
+    dispatch(setActionTrue());
     if (retval != null) {
       if (retval?.WithData?.command_result === true) {
-
+        dispatch(
+          setResult({
+            type: ResultTypeEnum.INFO,
+            message: `Done ${buildAndDeployButtonText}\nSucceeded Projects: ${retval?.WithData?.command_data.succeeded_projects.join(
+              ", "
+            )}\nFailed Projects: ${retval?.WithData?.command_data.failed_projects.join(
+              ", "
+            )}\nCheck the log at ${'"<home dir>/dotnet-desktop-deploy/log"'} for more detail`,
+          } as PublishResultState)
+        );
       } else {
-
+        dispatch(
+          setResult({
+            type: ResultTypeEnum.ERROR,
+            message: `Failed publishing and deploying project(s), please check the log at ${'"<home dir>/dotnet-desktop-deploy/log"'}\n${
+              retval?.WithData?.command_message
+            }`,
+          })
+        );
       }
     } else {
-      setToastList((currVal) => [...currVal, {
-        id: Math.random() * ToastSeverityEnum.ERROR,
-        message: `Failed publishing and deploying project(s), please check the log at ${'"<home dir>/dotnet-desktop-deploy/log"'}`,
-        severity: ToastSeverityEnum.SUCCESS,
-      } as ToastListModel]);
+      dispatch(
+        setResult({
+          type: ResultTypeEnum.ERROR,
+          message: `Failed publishing and deploying project(s), please check the log at ${'"<home dir>/dotnet-desktop-deploy/log"'}`,
+        })
+      );
       // <p>{`Error building and deploying angular app(s). Please check your log at ${'"<home dir>/angular-deploy-gui/log"'}`}</p>
     }
-    // const command = new Command("wt");
-    // const child = await command.spawn();
-    // await child.write('message');
   };
 
   const gridSelectionLocalProjectListChange = (state: ProjectModel[]) => {
@@ -206,6 +253,7 @@ const BuildPage = () => {
               onChange={(e) => setSlnPath(e.target.value)}
               placeholder="Path to your .sln file"
               className="input input-bordered w-full"
+              disabled={!actionState}
             />
           </label>
           <label className="flex grow form-control w-full">
@@ -220,9 +268,14 @@ const BuildPage = () => {
               onChange={(e) => setDeploymentPath(e.target.value)}
               placeholder="Path to your deployment directory (leave empty to disable auto-deploy)"
               className="input input-bordered w-full"
+              disabled={!actionState}
             />
           </label>
-          <button className="btn btn-accent" onClick={handleSubmitClick}>
+          <button
+            className="btn btn-accent"
+            onClick={handleSubmitClick}
+            disabled={!actionState}
+          >
             Submit
           </button>
         </div>

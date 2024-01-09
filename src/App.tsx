@@ -1,9 +1,13 @@
+import { Provider } from "react-redux";
 import "./App.css";
 import Layout from "./components/Layout";
+import { globalStore } from "./redux/store";
 
 function App() {
   return (
-    <Layout></Layout>
+    <Provider store={globalStore}>
+      <Layout></Layout>
+    </Provider>
   );
 }
 

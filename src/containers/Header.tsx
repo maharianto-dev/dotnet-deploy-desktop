@@ -1,10 +1,15 @@
 import { useState, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { useLocation, useNavigate } from "react-router-dom";
+import { ResultTypeEnum, setResult } from "../redux/resultSlice";
+import { RootState } from "../redux/store";
 
 const Header = () => {
+  const actionState = useSelector((state: RootState) => state.actionState.value);
   const [isActive, setActive] = useState("build");
   const navigate = useNavigate();
   let location = useLocation();
+  const dispatch = useDispatch();
 
   useEffect(() => {
     switch (location?.pathname) {
@@ -19,7 +24,16 @@ const Header = () => {
     }
   }, []);
 
+  const resetResultBox = () => {
+    dispatch(
+      setResult({
+        type: ResultTypeEnum.EMPTY,
+        message: null,
+      })
+    );
+  };
   const handleNavButton = (type: string) => {
+    resetResultBox();
     switch (type) {
       case "build":
         setActive("build");
@@ -40,24 +54,26 @@ const Header = () => {
         <h1 className="px-2 text-3xl">.NET Deploy GUI</h1>
       </div>
       <div className="navbar p-0">
-        <a
+        <button
           className={
             "btn btn-ghost text-base " +
             (isActive === "build" ? "btn-active" : "")
           }
           onClick={() => handleNavButton("build")}
+          disabled={!actionState}
         >
           Publish
-        </a>
-        <a
+        </button>
+        <button
           className={
             "btn btn-ghost text-base " +
             (isActive === "run" ? "btn-active" : "")
           }
           onClick={() => handleNavButton("run")}
+          disabled={!actionState}
         >
           Run
-        </a>
+        </button>
       </div>
     </div>
   );
