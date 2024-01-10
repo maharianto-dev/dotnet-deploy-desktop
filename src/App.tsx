@@ -1,19 +1,13 @@
-import { useState } from "react";
-import { invoke } from "@tauri-apps/api/tauri";
+import { Provider } from "react-redux";
 import "./App.css";
 import Layout from "./components/Layout";
+import { globalStore } from "./redux/store";
 
 function App() {
-  const [greetMsg, setGreetMsg] = useState("");
-  const [name, setName] = useState("");
-
-  async function greet() {
-    // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
-    setGreetMsg(await invoke("greet", { name }));
-  }
-
   return (
-    <Layout></Layout>
+    <Provider store={globalStore}>
+      <Layout></Layout>
+    </Provider>
   );
 }
 

@@ -6,14 +6,6 @@ pub struct CommandResultStruct<T> {
 }
 
 impl CommandResultStruct<()> {
-    pub fn initialize() -> Self {
-        CommandResultStruct {
-            command_result: false,
-            command_message: "init".to_string(),
-            command_data: None,
-        }
-    }
-
     pub fn new(new_command_result: bool, new_command_message: &str) -> Self {
         CommandResultStruct {
             command_result: new_command_result,
