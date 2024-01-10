@@ -44,6 +44,11 @@ pub fn check_deploy_path(path: &str) -> CheckPathStruct {
         return CheckPathStruct::new(true, "Deployment path is not provided, skipping auto-deploy".to_string());
     }
 
+    if path.contains(char::is_whitespace) {
+        error!("Deployment path contains whitespace");
+        return CheckPathStruct::new(false, "Deployment path contains whitespace".to_string());
+    }
+
     let my_path = clean_path(path);
 
     let my_path_obj = Path::new(&my_path);

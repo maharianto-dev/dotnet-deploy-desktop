@@ -44,6 +44,7 @@ const BuildPage = () => {
   const [buildAndDeployButtonText, setBuildAndDeployButtonText] =
     useState("Publish");
   const [toastList, setToastList] = useState([] as ToastListModel[]);
+  const [publishSummaryMessage, setPublishSummaryMessage] = useState('');
 
   const dispatch = useDispatch();
   const actionState = useSelector(
@@ -85,8 +86,10 @@ const BuildPage = () => {
         setEnableBuildAndDeployButton(true);
         if (deploymentPath != null && deploymentPath.trim() !== "") {
           setBuildAndDeployButtonText("Publish And Deploy");
+          setPublishSummaryMessage(`Solution read from ${slnPath} and will deploy to ${deploymentPath}`);
         } else {
           setBuildAndDeployButtonText("Publish");
+          setPublishSummaryMessage(`Solution read from ${slnPath}`);
         }
         setToastList((currval) => [
           ...currval,
@@ -96,6 +99,9 @@ const BuildPage = () => {
             severity: ToastSeverityEnum.SUCCESS,
           } as ToastListModel,
         ]);
+
+
+
       } else {
         setToastList((currval) => [
           ...currval,
@@ -259,7 +265,7 @@ const BuildPage = () => {
           <label className="flex grow form-control w-full">
             <div className="label">
               <span className="label-text">
-                Backend deployment directory path
+                Backend deployment directory path (no whitespace in directory location)
               </span>
             </div>
             <input
@@ -279,6 +285,7 @@ const BuildPage = () => {
             Submit
           </button>
         </div>
+        <p>{publishSummaryMessage}</p>
         <div className="flex flex-row grow w-full max-h-full gap-2 overflow-y-auto">
           <div className="flex flex-col w-5/12 min-h-full max-h-full overflow-y-auto divide-y divide-double divide-black">
             <p className="text-lg bg-indigo-600">Project List</p>
@@ -302,7 +309,7 @@ const BuildPage = () => {
             />
           </div>
           <div className="flex flex-col w-5/12 min-h-full max-h-full overflow-y-auto divide-y divide-double divide-black">
-            <p className="text-lg bg-indigo-600">Selected Project To Build</p>
+            <p className="text-lg bg-indigo-600">List of Project To Build</p>
             <Grid
               projectList={null}
               showMultiSelect={true}

@@ -93,8 +93,10 @@ async fn publish_and_deploy(data: PublishAndDeployStruct) -> NoDataOrWithDataStr
     let mut success_vec:Vec<String> = Vec::<String>::new();
     let mut failed_vec:Vec<String> = Vec::<String>::new();
     let clean_sln_path = helpers::check_path::clean_path(&data.sln_path);
+    let clean_deployment_path = helpers::check_path::clean_path(&data.deployment_path);
+    println!("{}", &clean_deployment_path);
     for datum in data.project_list {
-        match helpers::publish_and_deploy::publish(&clean_sln_path, &datum).await {
+        match helpers::publish_and_deploy::publish(&clean_sln_path, &clean_deployment_path, &datum).await {
             Ok(()) => {
                 success_vec.push(datum.project_name.to_owned());
                 info!("Successfully published {}", &datum.project_name);
