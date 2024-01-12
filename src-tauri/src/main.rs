@@ -3,9 +3,11 @@
 
 use enums::NoDataOrWithDataStruct;
 use helpers::check_path::check_deploy_path;
+use structs::start_project_struct::StartProjectStruct;
 use std::{error::Error, fs::read_to_string, path::Path};
-use structs::check_path_struct::GetProjectCommandStruct;
-use structs::publish_and_deploy_struct::{PublishAndDeployStruct, PublishAndDeployResultStruct};
+use structs::check_path_struct::{GetDeploymentDirectoryStruct, GetProjectCommandStruct};
+use structs::parsed_deployment_dir_struct::ParsedDeploymentDirStruct;
+use structs::publish_and_deploy_struct::{PublishAndDeployResultStruct, PublishAndDeployStruct};
 
 use structs::returns_struct::CommandResultStruct;
 
@@ -41,7 +43,7 @@ fn get_projects(
         return NoDataOrWithDataStruct::NoData(retval);
     }
     if deploy_path_valid.is_valid == false {
-        error!("Desployment path is not valid");
+        error!("Deployment path is not valid");
         let retval = CommandResultStruct::new(false, &deploy_path_valid.result);
         return NoDataOrWithDataStruct::NoData(retval);
     }
@@ -50,7 +52,7 @@ fn get_projects(
     match result_get_projects_in_solution {
         Ok(data) => {
             info!("Done getting projects list");
-            let retval = CommandResultStruct::new_with_generic(true, "solution parsed", data);
+            let retval = CommandResultStruct::new_with_generic(true, "Solution parsed", data);
             return NoDataOrWithDataStruct::WithData(retval);
         }
         Err(err) => {
@@ -88,15 +90,19 @@ fn get_projects_in_solution(path: &str) -> Result<Vec<ParsedSolutionStruct>, Box
 }
 
 #[tauri::command]
-async fn publish_and_deploy(data: PublishAndDeployStruct) -> NoDataOrWithDataStruct<PublishAndDeployResultStruct> {
+async fn publish_and_deploy(
+    data: PublishAndDeployStruct,
+) -> NoDataOrWithDataStruct<PublishAndDeployResultStruct> {
     info!("Start executing publish and deploy command asynchronously");
-    let mut success_vec:Vec<String> = Vec::<String>::new();
-    let mut failed_vec:Vec<String> = Vec::<String>::new();
+    let mut success_vec: Vec<String> = Vec::<String>::new();
+    let mut failed_vec: Vec<String> = Vec::<String>::new();
     let clean_sln_path = helpers::check_path::clean_path(&data.sln_path);
     let clean_deployment_path = helpers::check_path::clean_path(&data.deployment_path);
     println!("{}", &clean_deployment_path);
     for datum in data.project_list {
-        match helpers::publish_and_deploy::publish(&clean_sln_path, &clean_deployment_path, &datum).await {
+        match helpers::publish_and_deploy::publish(&clean_sln_path, &clean_deployment_path, &datum)
+            .await
+        {
             Ok(()) => {
                 success_vec.push(datum.project_name.to_owned());
                 info!("Successfully published {}", &datum.project_name);
@@ -108,9 +114,63 @@ async fn publish_and_deploy(data: PublishAndDeployStruct) -> NoDataOrWithDataStr
         }
     }
     let result_vec = PublishAndDeployResultStruct::new(success_vec, failed_vec);
-    let retval = CommandResultStruct::new_with_generic(true, "Done executing publish and deploy command asynchronously", result_vec);
+    let retval = CommandResultStruct::new_with_generic(
+        true,
+        "Done executing publish and deploy command asynchronously",
+        result_vec,
+    );
     info!("Done executing publish and deploy command asynchronously");
     return NoDataOrWithDataStruct::WithData(retval);
+}
+
+#[tauri::command]
+fn load_deployment_dir(
+    data: GetDeploymentDirectoryStruct,
+) -> NoDataOrWithDataStruct<Vec<ParsedDeploymentDirStruct>> {
+    info!("Start loading deployment dir");
+    let deploy_path_valid = check_deploy_path(data.deploy_path);
+
+    if deploy_path_valid.is_valid == false {
+        error!("Deployment path is not valid");
+        let retval = CommandResultStruct::new(false, &deploy_path_valid.result);
+        return NoDataOrWithDataStruct::NoData(retval);
+    }
+
+    match get_projects_in_deployment_dir(&deploy_path_valid.result) {
+        Ok(projects_in_deployment_dir) => {
+            let retval = CommandResultStruct::new_with_generic(
+                true,
+                "Deployment dir content loaded",
+                projects_in_deployment_dir,
+            );
+            return NoDataOrWithDataStruct::WithData(retval);
+        }
+        Err(_err) => {
+            let retval = CommandResultStruct::new(false, "Error loading deployment dir content");
+            return NoDataOrWithDataStruct::NoData(retval);
+        }
+    }
+}
+
+fn get_projects_in_deployment_dir(
+    deployment_dir_path: &str,
+) -> Result<Vec<ParsedDeploymentDirStruct>, Box<dyn Error>> {
+    info!("Start getting projects in deployment dir");
+    match helpers::run_page::get_project_list(deployment_dir_path) {
+        Ok(project_list) => {
+            info!("Done getting projects in deployment dir");
+            Ok(project_list)
+        }
+        Err(_err) => {
+            error!("Failed getting projects in deployment dir");
+            return Err("Failed getting projects in deployment dir".into());
+        }
+    }
+}
+
+#[tauri::command]
+fn start_selected_projects(data: StartProjectStruct) {
+  println!("{:?}", data)
 }
 
 fn main() {
@@ -167,7 +227,9 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             greet,
             get_projects,
-            publish_and_deploy
+            publish_and_deploy,
+            load_deployment_dir,
+            start_selected_projects
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

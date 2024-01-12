@@ -65,11 +65,11 @@ const BuildPage = () => {
 
     dispatch(setActionFalse());
 
-    let sendData = {
+    const sendData = {
       path: slnPath,
       deploy_path: deploymentPath,
     } as GetProjectCommandStruct;
-    let retval = (await invoke("get_projects", {
+    const retval = (await invoke("get_projects", {
       data: sendData,
     })) as NoDataOrWithDataStructModel<ProjectModel[]>;
     setProjectList([...[]]);

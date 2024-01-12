@@ -18,3 +18,8 @@ pub struct GetProjectCommandStruct<'a> {
     pub path: &'a str,
     pub deploy_path: &'a str,
 }
+
+#[derive(serde::Deserialize)]
+pub struct GetDeploymentDirectoryStruct<'a> {
+    pub deploy_path: &'a str,
+}
